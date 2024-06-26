@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>Audiogram | URYs little waveform tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100vw;
+            padding: 0;
+            margin: 0;
+        }
+        h1{
+            margin-bottom: 0;
+        }
+        h2 {
+            margin-top: 0;
+            /* color: #666; */
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 30rem;
+        }
+        button {
+            display: inline;
+            background-color: #ccc;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        button.submit {
+            border: 2px solid purple;
+            background-color: white;
+            border-radius: 10px;
+            height: 40px;
+        }
+        button.submit > i{
+            display: none;
+        }
+        button.submit:hover > i {
+            display: inline;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .drop-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            width: 80%;
+            height: 9rem;
+            border: 2px dashed #ccc;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            padding: 1rem;
+        }
+        .drop-area:hover {
+            cursor: pointer;
+            border: 2px dashed purple;
+        }
+        input[type="file"]:nth-of-type(1) {
+            display: none;
+        }
+        .plus-icon {
+            font-size: 2rem;
+            height: 3rem;
+            width: 3rem;
+            color: #acacac;
+            border: 2px solid #ccc;
+            border-radius: 10%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* preview styles */
+        .preview {
+            position: relative;
+            aspect-ratio: 1/1;
+            border: 2px solid #ccc;
+            height: 333px;
+            width: 333px;
+            background-image: url('{{ bg_img }}');
+            background-size: cover;
+        }
+        .wave_prev {
+            position: absolute;
+            width: 100%;
+            height: 69px;
+            background-color: #f0f0f0;
+        }
+        .caption_prev {
+            position: absolute;
+            width: 100%;
+            height: 2rem;
+        }
+        .bottom-cover {
+            width: 100%;
+            height: 40px;
+            font-size: 1rem;
+            background-color: #fff;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Audiogram</h1>
+    <h2>URYs little waveform creatorium</h2>
+    <form method="post" enctype="multipart/form-data">
+        <div class="drop-area">
+            <label for="file" class="button">
+                <i class="fas fa-cloud-upload-alt"></i> Drop an audio file here or click to select a file
+            </label>
+            <p id="file-name"></p>
+            <div class="plus-icon">
+                <i class="fas fa-plus"></i>
+            </div>
+            <input type="file" name="file">
+        </div>
+
+        <label for="position">Waveform position (400)</label>
+        <input type="range" name="position" id="position" value="425" min="0" max="1000">
+        <label for="wave-colour">Waveform colour</label>
+        <input type="color" name="wave-colour" id="wave-colour" value="#000000">
+        <br>
+        <label for="caption-position">Caption position (900)</label>
+        <input type="range" name="caption-position" id="caption-position" value="620" min="0" max="1000">
+        <label for="caption-colour">Caption colour</label>
+        <input type="color" name="caption-colour" id="caption-colour" value="#000000">
+        <br>
+        <label for="bg-image">Background image</label>
+        <input type="file" name="bg-image">
+
+        <br>
+        <div class="bottom-cover"></div>
+        <div class="preview">
+            <div class="wave_prev"></div>
+            <div class="caption_prev">Here is an example caption you might see rendered, be careful of wrapping</div>
+        </div>
+        <div class="bottom-cover"></div>
+
+        <button class="submit">Create Your Wave <i class="fa-solid fa-wave-square"></i></button>
+        <button disabled class="submit"><i class="fa-solid fa-spinner fa-spin"></i> Generating subtitles...</button>
+    </form>
+    <script>
+        const input = document.querySelector('input[type=file]');
+        const dropArea = document.querySelector('.drop-area');
+        const fileName = document.querySelector('#file-name');
+        const position = document.querySelector('#position');
+        const positionLabel = document.querySelector('label[for=position]');
+        const captionPosition = document.querySelector('#caption-position');
+        const captionPositionLabel = document.querySelector('label[for=caption-position]');
+        const submitButton = document.querySelectorAll('.submit')[0];
+        const loadingButton = document.querySelectorAll('.submit')[1];
+
+        const preview = document.querySelector('.preview');
+        const wavePrev = document.querySelector('.wave_prev');
+        const captionPrev = document.querySelector('.caption_prev');
+        const waveColor = document.querySelector('#wave-colour');
+        const captionColor = document.querySelector('#caption-colour');
+        const bgImage = document.querySelector('input[name=bg-image]');
+
+
+        // set values on load
+        positionLabel.innerHTML = `Waveform position (${position.value})`;
+        captionPositionLabel.innerHTML = `Caption position (${captionPosition.value})`;
+        wavePrev.style.top = `${(position.value / 3) -  wavePrev.offsetHeight/2}px`;
+        captionPrev.style.top = `${(captionPosition.value/3) - captionPrev.offsetHeight/2}px`;
+        wavePrev.style.backgroundColor = waveColor.value;
+        captionPrev.style.color = captionColor.value;
+
+        
+        input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            console.log(file);
+            fileName.innerHTML = `<i class="fas fa-file-audio"></i> ${file.name}`;
+        });
+        dropArea.addEventListener('click', (e) => input.click());
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.style.backgroundColor = '#f0f0f0';
+            dropArea.style.border = '2px dashed purple';
+        });
+        dropArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropArea.style.backgroundColor = 'transparent';
+            dropArea.style.border = '2px dashed #ccc';
+        });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.style.backgroundColor = 'transparent';
+            dropArea.style.border = '2px dashed #ccc';
+            // check if file is dropped
+            if (!e.dataTransfer.items) {
+                return;
+            }
+            // check files are dropped and they are audio
+            if (!(e.dataTransfer.items[0].kind === 'file' && e.dataTransfer.items[0].type === 'audio/mpeg')) {
+                return
+            }
+            // check only one file is dropped
+            if (e.dataTransfer.items.length > 1) {
+                return;
+            }
+            input.files = e.dataTransfer.files;
+            // trigger change event
+            const event = new Event('change');
+            input.dispatchEvent(event);
+        });
+        position.addEventListener('input', (e) => {
+            positionLabel.innerHTML = `Waveform position (${e.target.value})`;
+            //wavePrev.style.top = `${e.target.value/3}px`;
+            // calculte position of top accounting half the height of wave
+            wavePrev.style.top = `${(e.target.value / 3) -  wavePrev.offsetHeight/2}px`;
+        });
+        captionPosition.addEventListener('input', (e) => {
+            captionPositionLabel.innerHTML = `Caption position (${e.target.value})`;
+            captionPrev.style.top = `${(e.target.value/3) - captionPrev.offsetHeight/2}px`;
+        });
+        waveColor.addEventListener('input', (e) => {
+            wavePrev.style.backgroundColor = e.target.value;
+        });
+        captionColor.addEventListener('input', (e) => {
+            captionPrev.style.color = e.target.value;
+        });
+        bgImage.addEventListener('change', (e) => {
+            // set the background image of the preview from the local file
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.style.backgroundImage = `url(${e.target.result})`;
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        // submission code
+        loadingButton.style.display = 'none';
+        submitButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            loadingButton.style.display = 'inline';
+            submitButton.style.display = 'none';
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            formData.append('wave_position', position.value);
+            formData.append('wave_color', waveColor.value);
+            formData.append('caption_position', captionPosition.value);
+            formData.append('caption_color', captionColor.value);
+            console.log(formData)
+            if (bgImage.files.length > 0){
+                formData.append('custom_bg', bgImage.files[0]);
+                console.log("bg image added")
+            }
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response)
+            .then(data => {
+                // redirect ot the new page
+                window.location.href = data.url;
+            })
+            .catch(error => {
+                console.error(error);
+                loadingButton.style.display = 'none';
+                submitButton.style.display = 'inline';
+            });
+        });
+    </script>
+</body>
+</html>

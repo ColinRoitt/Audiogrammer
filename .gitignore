@@ -1,0 +1,7 @@
+uploads/*
+model/*
+
+!uploads/.gitkeep
+!model/.gitkeep
+
+.DS_Store

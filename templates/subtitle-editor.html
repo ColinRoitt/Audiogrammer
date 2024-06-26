@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>Audiogram | Subtitle Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100vw;
+            padding: 0;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 30rem;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .header > a {   
+            text-decoration: none;
+            color: black;
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        .header > a:hover {
+            color: purple;
+        }
+        button {
+            display: inline;
+            background-color: #ccc;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        button[type="submit"] {
+            border: 2px solid purple;
+            background-color: white;
+            border-radius: 10px;
+            min-width: 30%;
+            height: 40px;
+        }
+        button[type="submit"] > span{
+            display: none;
+        }
+        button[type="submit"]:hover > span {
+            display: inline;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .text-editor {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .block {
+            width: 100%;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 3px solid #ccc;
+            padding: 1rem;
+            position: relative; /* To position delete button */
+            box-sizing: border-box;
+        }
+        .selected-block {
+            border: 3px solid purple;
+        }
+        .times {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            width: 100%;
+            margin-bottom: .8rem;
+        }
+        .times input {
+            width: 10%;
+        }
+        .caption {
+            width: 98%;
+        }
+        .add-segment, .delete-block {
+            margin-top: 0.5rem;
+            margin-left: 0.5rem;
+        }
+        #add-block-top {
+            margin-bottom: 1rem;
+        }
+        .player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        #play {
+            border-radius: 50%;
+            height: 3rem;
+            width: 3rem;
+            font-size: 1.3rem;
+            background-color: rgba(0, 0, 0, 0);
+            border: 2px solid #ccc;
+        }
+        #play:hover {
+            border: 2px solid purple;
+        }
+        #waveform {
+            width: 100%;
+        }
+        .timestamp {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .controls button {
+            margin: 0 0.5rem;
+        }
+        .current-subtitle-cont {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+            width: 100%;
+            height: 3rem;
+        }
+        .current-subtitle {
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <!-- back button -->
+            <a onclick="history.back()"><i class="fa-solid fa-arrow-left"></i></a>
+            <h1>Subtitle Editor</h1>
+            <span class="spacer"></span>
+        </div>
+        <div class="player">
+            <div id="waveform"></div>
+            <div class="timestamp">
+                <span class="current">0.00</span>
+                <span class="divider">/</span>
+                <span class="duration">0.00</span>
+            </div>
+            <div class="controls">
+                <button id="play" aria-label="play" onclick="wavesurfer.playPause()"><i class="fa-solid fa-play"></i></button>
+            </div>
+        </div>
+        <div class="current-subtitle-cont">
+            <span class="current-subtitle"></span>
+        </div>
+        <form method="POST">
+            <div class="text-editor" id="text-editor"></div>
+            <button type="submit" aria-label="Confirm">Create <span>🎉</span></button>
+            <button disabled type="submit" aria-label="generating"><i class="fa-solid fa-spinner fa-spin"></i> Gramming your Audio...</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let subtitles = JSON.parse('{{ subtitles | tojson | safe }}');
+            const submitButton = document.querySelector("button[type=submit]");
+            const loadingButton = document.querySelectorAll("button[type=submit]")[1];
+            const textEditor = document.getElementById("text-editor");
+            const durationDiv = document.querySelector(".duration");
+            const currentDiv = document.querySelector(".current");
+            let duration = 0;
+
+            loadingButton.style.display = "none";
+
+            wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: 'violet',
+                progressColor: 'purple'
+
+            });
+
+            wavesurfer.load('{{ audio_url }}');
+
+            wavesurfer.on('ready', function() {
+                duration = wavesurfer.getDuration();
+                durationDiv.textContent = `${duration.toFixed(2)}`;
+            });
+
+            // update timestamp
+            wavesurfer.on("timeupdate", function() {
+                const currentTime = wavesurfer.getCurrentTime();
+                currentDiv.textContent = `${currentTime.toFixed(2)}`;
+                const currentSubtitle = subtitles.find(({start, end}) => currentTime >= start && currentTime <= end);
+                if (currentSubtitle) {
+                    document.querySelector(".current-subtitle").textContent = currentSubtitle.text;
+                } else {
+                    document.querySelector(".current-subtitle").textContent = "";
+                }
+                // hihglight box
+                const blocks = document.querySelectorAll(".block");
+                blocks.forEach((block, index) => {
+                    const startTimeInput = block.querySelector(".start");
+                    const endTimeInput = block.querySelector(".end");
+                    const start = parseFloat(startTimeInput.value);
+                    const end = parseFloat(endTimeInput.value);
+                    if (currentTime >= start && currentTime <= end) {
+                        block.classList.add("selected-block");
+                    } else {
+                        block.classList.remove("selected-block");
+                    }
+                });
+            });
+
+            // update icon
+            wavesurfer.on("play", function() {
+                document.querySelector("#play i").className = "fa-solid fa-pause";
+            });
+
+            wavesurfer.on("pause", function() {
+                document.querySelector("#play i").className = "fa-solid fa-play";
+            });
+
+            function createBlock(index, start_time = "", end_time = "", text = "") {
+                const block = document.createElement("div");
+                block.className = "block";
+
+                const timesDiv = document.createElement("div");
+                timesDiv.className = "times";
+
+                const startTimeInput = document.createElement("input");
+                startTimeInput.className = "time start";
+                startTimeInput.ariaLabel = "Block start time";
+                startTimeInput.type = "number";
+                startTimeInput.step = "0.1";
+                startTimeInput.value = start_time;
+                startTimeInput.onchange = readBlocksAndSave;
+
+                const setStartToCurrentTimeButton = document.createElement("button");
+                setStartToCurrentTimeButton.textContent = "Set";
+                setStartToCurrentTimeButton.addClassName = "set";
+                setStartToCurrentTimeButton.ariaLabel = "Set start time to current time";
+                setStartToCurrentTimeButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    startTimeInput.value = wavesurfer.getCurrentTime().toFixed(1);
+                    readBlocksAndSave();
+                });
+
+                const span = document.createElement("span");
+                span.innerHTML = '<i class="fa-solid fa-arrow-right"></i>';
+
+                const endTimeInput = document.createElement("input");
+                endTimeInput.className = "time end";
+                startTimeInput.ariaLabel = "Block end time";
+                endTimeInput.type = "number";
+                endTimeInput.step = "0.1";
+                endTimeInput.value = end_time;
+                endTimeInput.onchange = readBlocksAndSave;
+
+                const setEndToCurrentTimeButton = document.createElement("button");
+                setEndToCurrentTimeButton.textContent = "Set";
+                setEndToCurrentTimeButton.addClassName = "set";
+                setEndToCurrentTimeButton.ariaLabel = "Set end time to current time";
+                setEndToCurrentTimeButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    endTimeInput.value = wavesurfer.getCurrentTime().toFixed(1);
+                    readBlocksAndSave();
+                });
+
+                const captionInput = document.createElement("input");
+                captionInput.className = "caption";
+                captionInput.type = "text";
+                captionInput.value = text;
+                captionInput.ariaLabel = "Block subtitle";
+                captionInput.onchange = readBlocksAndSave;
+
+                const segmentController = document.createElement("span");
+
+                const addSegmentButtonTop = document.createElement("button");
+                addSegmentButtonTop.className = "add-segment add-above";
+                // addSegmentButtonTop.textContent = "Add Above";
+                addSegmentButtonTop.innerHTML = '<i class="fa-solid fa-plus"></i><i class="fa-solid fa-up-long"></i>';
+                addSegmentButtonTop.ariaLabel = "Add Below";
+                addSegmentButtonTop.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const previousBlockIndex = index - 1;
+                    const previousEndTime = subtitles[previousBlockIndex] ? subtitles[previousBlockIndex].end : 0.00;
+                    const newBlock = createBlock(previousBlockIndex, previousEndTime, start_time, "");
+                    block.before(newBlock);
+                    readBlocksAndSave();
+                });
+
+                const addSegmentButtonBottom = document.createElement("button");
+                addSegmentButtonBottom.className = "add-segment add-below";
+                // addSegmentButtonBottom.textContent = "Add Below";
+                addSegmentButtonBottom.innerHTML = '<i class="fa-solid fa-plus"></i><i class="fa-solid fa-down-long"></i>';
+                addSegmentButtonBottom.ariaLabel = "Add Below";
+                addSegmentButtonBottom.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const nextBlockIndex = index + 1;
+                    const nextStartTime = subtitles[nextBlockIndex] ? subtitles[nextBlockIndex].start : "";
+                    const newBlock = createBlock(nextBlockIndex, end_time, nextStartTime, "");
+                    block.after(newBlock);
+                    readBlocksAndSave();
+                });
+
+                const deleteBlockButton = document.createElement("button");
+                deleteBlockButton.className = "delete-block";
+                // deleteBlockButton.textContent = "Delete";
+                deleteBlockButton.innerHTML = '<i class="fa-solid fa-minus"></i>';
+                deleteBlockButton.ariaLabel = "Delete block";
+                deleteBlockButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    block.remove();
+                    readBlocksAndSave();
+                });
+
+                timesDiv.appendChild(startTimeInput);
+                timesDiv.appendChild(setStartToCurrentTimeButton);
+                timesDiv.appendChild(span);
+                timesDiv.appendChild(setEndToCurrentTimeButton);
+                timesDiv.appendChild(endTimeInput);
+                block.appendChild(timesDiv);
+                block.appendChild(captionInput);
+                segmentController.appendChild(addSegmentButtonTop);
+                segmentController.appendChild(deleteBlockButton);
+                segmentController.appendChild(addSegmentButtonBottom);
+                block.appendChild(segmentController);
+
+                return block;
+            }
+
+            function initializeBlocks() {
+                textEditor.innerHTML = "";
+                subtitles.forEach(({start, end, text}, index) => {
+                    const block = createBlock(index, start, end, text);
+                    textEditor.appendChild(block);
+                });
+                console.log(subtitles);
+            }
+
+            function readBlocksAndSave() {
+                const blocks = document.querySelectorAll(".block");
+                const subs = [];
+                blocks.forEach((block, index) => {
+                    const startTimeInput = block.querySelector(".start");
+                    const endTimeInput = block.querySelector(".end");
+                    const captionInput = block.querySelector(".caption");
+
+                    const start = startTimeInput.value;
+                    const end = endTimeInput.value;
+                    const text = captionInput.value;
+
+                    subs.push({start, end, text});
+                });
+
+                subtitles = subs;
+                // re-render the blocks in half a second
+                setTimeout(() => {
+                    textEditor.innerHTML = "";
+                    initializeBlocks();
+                }, 100);
+            }
+
+            document.querySelector("form").addEventListener("submit", (event) => {
+                event.preventDefault();
+                // set button to loading
+                submitButton.style.display = "none";
+                loadingButton.style.display = "inline";
+                subtitles_formatted = subtitles.map(({start, end, text}, index) => {
+                    return {
+                        start: parseFloat(start),
+                        end: parseFloat(end),
+                        text
+                    };
+                });
+                console.log(JSON.stringify(subtitles_formatted))
+                fetch("/edit-subtitles", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(subtitles_formatted),
+                })
+                .then((response) => response)
+                .then((data) => {
+                    console.log("Success:", data)
+                    window.location.href = data.url;
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                    loadingButton.style.display = "none";
+                    submitButton.style.display = "inline";
+                });
+            });
+
+            // Initialize the blocks
+            initializeBlocks();
+        });
+    </script>
+</body>
+</html>

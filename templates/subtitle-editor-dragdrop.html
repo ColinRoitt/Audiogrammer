@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <title>Subtitle Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        #audio-player {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        #marker {
+            position: absolute;
+            width: 2px;
+            height: 600px;
+            background-color: red;
+            margin-left: 27px;
+            left: 0;
+            /* top: 30px; Adjust to be above the timeline */
+        }
+
+        #timeline-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            overflow-y: auto;
+            padding-top: 20px;
+        }
+
+        .subtitle-block {
+            position: absolute;
+            height: 50px;
+            background-color: #ddd;
+            border: 1px solid #bbb;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5px;
+        }
+
+        .subtitle-block span {
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .handle {
+            width: 10px;
+            background-color: #bbb;
+            cursor: ew-resize;
+        }
+
+        #time-labels {
+            display: flex;
+            flex-direction: row;
+        }
+        
+        .time-label {
+            position: relative;
+            font-size: 12px;
+        }
+
+        .time-label:nth-last-of-type(1) {
+            color: red;
+        }
+        
+        .delete-button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 45px;
+        }
+        
+        .horizontal-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: #bbb;
+            width: 100%;
+        }
+
+        .add-button {
+            background-color: green;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 45px;
+        }
+    </style>
+</head>
+<body>
+    <audio id="audio-player" controls>
+        <source src="{{ audio_url }}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <div id="marker"></div>
+    <button id="zoom-in">Zoom In</button>
+    <button id="zoom-out">Zoom Out</button>
+    <div id="time-labels"></div>
+    <div id="timeline-container">
+        <!-- Timeline will be dynamically populated here -->
+    </div>
+    <button id="submit-button">Submit</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const timelineContainer = document.getElementById('timeline-container');
+            const timeLabelsContainer = document.getElementById('time-labels');
+            const submitButton = document.getElementById('submit-button');
+            const audioPlayer = document.getElementById('audio-player');
+            const marker = document.getElementById('marker');
+            const zoomInButton = document.getElementById('zoom-in');
+            const zoomOutButton = document.getElementById('zoom-out');
+
+            const subtitles = JSON.parse('{{ subtitles|tojson }}')
+
+            let pixelPerSecond = 40;
+            let totalDuration;
+            // wait for audio to load
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                totalDuration = audioPlayer.duration;
+                console.log(totalDuration);
+                createTimeLabels();
+            });
+
+            function zoomIn() {
+                pixelPerSecond += 10;
+                updateTimeline();
+                updateTime();
+            }
+            
+            function zoomOut() {
+                pixelPerSecond -= 10;
+                updateTimeline();
+                updateTime();
+            }
+            
+            zoomInButton.addEventListener('click', zoomIn);
+            zoomOutButton.addEventListener('click', zoomOut);
+
+            function updateTime() {
+                const currentTime = audioPlayer.currentTime;
+                marker.style.left = `${currentTime * pixelPerSecond}px`;
+            }
+
+            function createTimeLabels() {
+                timeLabelsContainer.innerHTML = '';
+                for (let i = 0; i <= totalDuration; i += 1) {
+                    const label = document.createElement('div');
+                    label.className = 'time-label';
+                    label.style.width = `${pixelPerSecond}px`;
+                    label.innerText = i;
+                    timeLabelsContainer.appendChild(label);
+                }
+            }
+
+            function createSubtitleBlock(subtitle, index) {
+                createTimeLabels()
+                const block = document.createElement('div');
+                block.className = 'subtitle-block';
+                block.style.top = `${index * 60}px`;
+                block.style.left = `${subtitle.start * pixelPerSecond}px`;
+                block.style.width = `${(subtitle.end - subtitle.start) * pixelPerSecond}px`;
+
+                const span = document.createElement('div');
+                span.className = 'subtitle-text';
+                span.contentEditable = true;
+                span.innerText = subtitle.text;
+
+                span.addEventListener('input', (e) => {
+                    subtitle.text = e.target.innerText;
+                });
+
+                const startLabel = document.createElement('div');
+                startLabel.className = 'time-label';
+                // round to one dp
+                startLabel.innerText = subtitle.start.toFixed(1);
+
+                const endLabel = document.createElement('div');
+                endLabel.className = 'time-label';
+                endLabel.innerText = subtitle.end.toFixed(1);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-button';
+                deleteButton.innerText = 'X';
+
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    subtitles.splice(index, 1);
+                    updateTimeline();
+                });
+
+                block.appendChild(startLabel);
+                block.appendChild(span);
+                block.appendChild(endLabel);
+                // block.appendChild(deleteButton);
+                block.dataset.index = index;
+
+                timelineContainer.appendChild(block);
+
+                // Add horizontal line
+                const horizontalLine = document.createElement('div');
+                horizontalLine.className = 'horizontal-line';
+                horizontalLine.style.top = `${index * 60 + 50}px`;
+                timelineContainer.appendChild(horizontalLine);
+            }
+
+            subtitles.forEach((subtitle, index) => createSubtitleBlock(subtitle, index));
+
+            interact('.subtitle-block')
+                .draggable({
+                    onmove(event) {
+                        const target = event.target;
+                        const index = target.dataset.index;
+                        const subtitle = subtitles[index];
+
+                        const dx = event.dx / pixelPerSecond;
+                        subtitle.start += dx;
+                        subtitle.end += dx;
+
+                        target.style.left = `${subtitle.start * pixelPerSecond}px`;
+                        target.querySelector('.time-label:first-child').innerText = subtitle.start.toFixed(1);
+                        target.querySelector('.time-label:last-child').innerText = subtitle.end.toFixed(1);
+                    },
+                })
+                .resizable({
+                    edges: { left: true, right: true },
+                    listeners: {
+                        move(event) {
+                            const target = event.target;
+                            const index = target.dataset.index;
+                            const subtitle = subtitles[index];
+
+                            if (event.edges.left) {
+                                const dx = event.deltaRect.left / pixelPerSecond;
+                                subtitle.start += dx;
+                                target.style.left = `${subtitle.start * pixelPerSecond}px`;
+                                target.style.width = `${(subtitle.end - subtitle.start) * pixelPerSecond}px`;
+                                target.querySelector('.time-label:first-child').innerText = subtitle.start.toFixed(1);
+                            }
+                            if (event.edges.right) {
+                                const dx = event.deltaRect.width / pixelPerSecond;
+                                subtitle.end += dx;
+                                target.style.width = `${(subtitle.end - subtitle.start) * pixelPerSecond}px`;
+                                target.querySelector('.time-label:last-child').innerText = subtitle.end.toFixed(1);
+                            }
+                        }
+                    }
+                });
+
+            function onSplit(e) {
+                const block = e.target.closest('.subtitle-block');
+                const index = parseInt(block.dataset.index, 10);
+                const subtitle = subtitles[index];
+                const midTime = (subtitle.start + subtitle.end) / 2;
+                const newSubtitle = { start: midTime, end: subtitle.end, text: subtitle.text };
+
+                subtitle.end = midTime;
+
+                subtitles.splice(index + 1, 0, newSubtitle);
+                updateTimeline();
+            }
+
+            function updateTimeline() {
+                timelineContainer.innerHTML = '';
+                createTimeLabels();
+                subtitles.forEach((subtitle, index) => createSubtitleBlock(subtitle, index));
+                interact('.subtitle-block').draggable(true).resizable(true); // Re-enable interact.js
+            }
+
+            submitButton.addEventListener('click', () => {
+                fetch('/edit-subtitles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(subtitles),
+                })
+                .then(response => response.json())
+                .then(data => console.log('Success:', data))
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            });
+
+            document.addEventListener('dblclick', onSplit);
+
+            createTimeLabels();
+
+            // Sync marker with audio playback
+            audioPlayer.addEventListener('timeupdate', updateTime);
+        });
+    </script>
+</body>
+</html>
