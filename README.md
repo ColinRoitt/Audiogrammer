@@ -11,16 +11,18 @@ A Python app for making custom audiograms with built-in captioning engine
 
 ## Setup
 
-To get running:
+Follow these instructions to run locally. Either install locally or if you have docker installed using the docker commands.
+
+### Install Locally
 
 1. Make sure ffmpeg and imagemagic are installed
 
-Linux:
 ```
+//Linux
 sudo apt install ffmpeg imagemagick
 ```
-Mac:
 ```
+//Mac
 brew install ffmpeg imagemagick
 ```
 
@@ -38,4 +40,22 @@ wget https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip -O
 
 ```
 python app.py
+```
+
+### Install with Docker
+If you install this way make sure it is a clean copy of the folder structure (model and uploads should be empty to avoid issues)
+
+1. Get base image
+```
+docker pull python:3.9-slim
+```
+
+2. Build
+```
+docker-compose build
+```
+
+3. Run
+```
+docker-compose up
 ```
