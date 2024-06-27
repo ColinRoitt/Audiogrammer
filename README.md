@@ -47,7 +47,7 @@ If you install this way make sure it is a clean copy of the folder structure (mo
 
 1. Get base image
 ```
-docker pull python:3.9-slim
+docker pull python:3.9-buster
 ```
 
 2. Build
