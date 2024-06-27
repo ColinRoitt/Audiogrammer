@@ -1,13 +1,11 @@
 # Audiogrammer
-A python app for making custom audiograms nice and simply
+A Python app for making custom audiograms with built-in captioning engine
+
+![image](https://github.com/ColinRoitt/Audiogrammer/assets/9614541/7e41eaa4-b5aa-4da1-aa69-03976ffff2fb)
+![image](https://github.com/ColinRoitt/Audiogrammer/assets/9614541/c38d937e-8a87-45aa-9699-11baef874264)
+
 
 ## Setup
-<!-- # Things you must do before running this code:
-# 1. Install the required packages: flask, pydub, moviepy, matplotlib, numpy, SpeechRecognition
-# also install whisper timestamped: pip install -U git+https://github.com/linto-ai/whisper-timestamped
-# 2. Install ffmpeg: sudo apt-get install ffmpeg
-# 3. Install imagemagick: sudo apt-get install imagemagick
-# or on mac: brew install ffmpeg imagemagick -->
 
 To get running:
 
