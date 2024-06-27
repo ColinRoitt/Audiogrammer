@@ -19,7 +19,7 @@ Linux:
 ```
 sudo apt install ffmpeg imagemagick
 ```
-- Mac:
+Mac:
 ```
 brew install ffmpeg imagemagick
 ```
