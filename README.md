@@ -29,6 +29,11 @@ brew install ffmpeg imagemagick
 pip install -r requirements.txt
 ```
 
+3. Install speech-to-text model
+```
+wget https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip -O model/model_files.zip && unzip model/model_files.zip -d model && mv model/vosk-model-en-us-0.42-gigaspeech/* model/ && rm -r model/vosk-model-en-us-0.42-gigaspeech
+```
+
 3. Run the server
 
 ```
