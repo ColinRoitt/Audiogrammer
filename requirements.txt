@@ -1,0 +1,7 @@
+Flask
+Werkzeug
+numpy
+matplotlib
+pydub
+moviepy
+git+https://github.com/linto-ai/whisper-timestamped

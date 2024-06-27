@@ -1,10 +1,3 @@
-# Things you must do before running this code:
-# 1. Install the required packages: flask, pydub, moviepy, matplotlib, numpy, SpeechRecognition
-# also install whisper timestamped: pip install -U git+https://github.com/linto-ai/whisper-timestamped
-# 2. Install ffmpeg: sudo apt-get install ffmpeg
-# 3. Install imagemagick: sudo apt-get install imagemagick
-# or on mac: brew install ffmpeg imagemagick
-
 import os
 from flask import Flask, json, request, redirect, url_for, send_from_directory, render_template, session
 from werkzeug.utils import secure_filename
