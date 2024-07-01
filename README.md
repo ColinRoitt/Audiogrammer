@@ -2,7 +2,7 @@
 A Python app for making custom audiograms with built-in captioning engine
 
 ## Example Output
-![Example Video](https://github.com/ColinRoitt/Audiogrammer/assets/9614541/a187337d-cba5-4007-b6fd-27d5914c3e11)
+https://github.com/ColinRoitt/Audiogrammer/assets/9614541/a187337d-cba5-4007-b6fd-27d5914c3e11
 
 ### UI
 <img src="https://github.com/ColinRoitt/Audiogrammer/assets/9614541/7e41eaa4-b5aa-4da1-aa69-03976ffff2fb" height="800"/>
