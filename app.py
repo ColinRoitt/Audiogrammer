@@ -101,4 +101,11 @@ def uploaded_file(filename):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    # read docker env variable deployment type
+    deployment_type = os.getenv('DEPLOYMENT_TYPE', 'development')
+    if deployment_type == 'production':
+        print('Running in production mode')
+        app.run(debug=False, host='0.0.0.0', port=5000)
+    else:
+        print('Running in development mode')
+        app.run(debug=True, port=5000)
