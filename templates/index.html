@@ -44,8 +44,11 @@
         button.submit > i{
             display: none;
         }
+        button.submit.loading {
+            display: inline-block;
+        }
         button.submit:hover > i {
-            display: inline;
+            display: inline-block;
         }
         form {
             display: flex;
@@ -150,7 +153,7 @@
         <div class="bottom-cover"></div>
 
         <button class="submit">Create Your Wave <i class="fa-solid fa-wave-square"></i></button>
-        <button disabled class="submit"><i class="fa-solid fa-spinner fa-spin"></i> Generating subtitles...</button>
+        <button disabled class="submit loading">Generating subtitles... <i class="fa-solid fa-spinner fa-spin"></i></button>
     </form>
     <script>
         const input = document.querySelector('input[type=file]');
