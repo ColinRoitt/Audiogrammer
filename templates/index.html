@@ -259,7 +259,7 @@
                 formData.append('custom_bg', bgImage.files[0]);
                 console.log("bg image added")
             }
-            fetch('/', {
+            fetch('/upload', {
                 method: 'POST',
                 body: formData
             })
