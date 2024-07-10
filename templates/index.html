@@ -251,6 +251,12 @@
             e.preventDefault();
             loadingButton.style.display = 'inline';
             submitButton.style.display = 'none';
+            if (!input.files.length) {
+                alert('Please select an audio file');
+                loadingButton.style.display = 'none';
+                submitButton.style.display = 'inline';
+                throw new Error('No file selected');
+            }
             const formData = new FormData();
             formData.append('file', input.files[0]);
             formData.append('wave_position', position.value);
@@ -269,6 +275,10 @@
             .then(response => response)
             .then(data => {
                 // redirect ot the new page
+                if (data.status !== 200){
+                    throw new Error('Failed to generate waveform');
+                    return;
+                }
                 window.location.href = data.url;
             })
             .catch(error => {
