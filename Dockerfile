@@ -16,7 +16,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Download and set up the speech-to-text model
-RUN wget https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip -O /app/model/model_files.zip
+RUN wget -nv https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip -O /app/model/model_files.zip
 RUN unzip /app/model/model_files.zip -d /app/model
 RUN mv /app/model/vosk-model-en-us-0.42-gigaspeech/* /app/model/
 

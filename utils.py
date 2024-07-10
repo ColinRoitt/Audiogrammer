@@ -37,7 +37,7 @@ def generate_subtitles(audio_path):
 
     audio = whisper.load_audio(audio_path)
     model = whisper.load_model("base")
-    result = whisper.transcribe(model, audio, language="en")
+    result = whisper.transcribe(model, audio, language="en", verbose=True)
 
     # convert to subtitles
     subtitles = []
@@ -155,4 +155,4 @@ def create_waveform_video_with_subtitles(input_path, output_path, subtitles, vid
     final_video = CompositeVideoClip([wavform_background_clip, subtitles_clip], size=output_size)
     final_video = final_video.set_audio(audio_clip)
 
-    final_video.write_videofile(output_path, fps=fps)
+    final_video.write_videofile(output_path, fps=fps, logger=None)
