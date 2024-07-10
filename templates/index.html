@@ -41,13 +41,13 @@
             border-radius: 10px;
             height: 40px;
         }
-        button.submit > i{
+        button.submit:not(.loading) > i{
             display: none;
         }
         button.submit.loading {
             display: inline-block;
         }
-        button.submit:hover > i {
+        button.submit:not(.loading):hover > i {
             display: inline-block;
         }
         form {
